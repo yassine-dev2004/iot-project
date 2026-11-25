@@ -7,7 +7,23 @@ Un système complet de **caméra de porte intelligente et contrôle d'accès cyb
 
 ---
 
-## 1. Architecture Globale
+## 1. Aperçu Visuel (Captures du Projet)
+
+### Dashboard Web Full-House — Caméra PC Live 30 FPS & Plan Architectural Interactif
+![Sentinel Home Web Dashboard Overview](docs/screenshots/web_dashboard_overview.png)
+
+### Simulateur Matériel Wokwi ESP32 Intégré & Historique des Événements
+![Wokwi ESP32 Circuit Simulation & Event Timeline](docs/screenshots/web_wokwi_esp32.png)
+
+### Jumeau Numérique 3D — Maison Contemporaine 2 Étages, Cône FOV & Smartphone Live
+![3D Full-House Architectural Digital Twin](docs/screenshots/sim_3d_full_house.png)
+
+### Scénario Personne Connue — Reconnaissance SFace & Ouverture Motorisée de la Porte (80°)
+![3D Door Auto-Unlock & Live Pipeline](docs/screenshots/sim_3d_door_open.png)
+
+---
+
+## 2. Architecture Globale
 
 ```mermaid
 flowchart TD
