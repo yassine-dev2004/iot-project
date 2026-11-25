@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "author": "Yassine Mezghanni",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-pir-motion-sensor", "id": "pir1", "top": -120, "left": -120, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "btn_bell", "top": 120, "left": -140, "attrs": { "color": "blue", "label": "Doorbell" } },
+    { "type": "wokwi-slide-switch", "id": "sw_contact", "top": 200, "left": -140, "attrs": { "label": "Door Contact" } },
+    { "type": "wokwi-servo", "id": "servo_lock", "top": -140, "left": 180, "attrs": {} },
+    { "type": "board-ssd1306", "id": "oled1", "top": 180, "left": 180, "attrs": { "i2cAddress": "0x3c" } },
+    { "type": "wokwi-led", "id": "led_green", "top": 40, "left": 280, "attrs": { "color": "green", "label": "Unlocked" } },
+    { "type": "wokwi-led", "id": "led_red", "top": 80, "left": 280, "attrs": { "color": "red", "label": "Alert" } },
+    { "type": "wokwi-buzzer", "id": "bz1", "top": 280, "left": 0, "attrs": { "hasVolume": "1" } }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:GND.1", "pir1:GND", "black", [ "v0" ] ],
+    [ "esp:5V", "pir1:VCC", "red", [ "v0" ] ],
+    [ "esp:15", "pir1:OUT", "green", [ "v0" ] ],
+    [ "esp:GND.1", "btn_bell:1.1", "black", [ "v0" ] ],
+    [ "esp:4", "btn_bell:2.1", "blue", [ "v0" ] ],
+    [ "esp:GND.1", "sw_contact:1", "black", [ "v0" ] ],
+    [ "esp:5", "sw_contact:2", "yellow", [ "v0" ] ],
+    [ "esp:GND.2", "servo_lock:GND", "black", [ "v0" ] ],
+    [ "esp:5V", "servo_lock:V+", "red", [ "v0" ] ],
+    [ "esp:13", "servo_lock:PWM", "orange", [ "v0" ] ],
+    [ "esp:GND.2", "oled1:GND", "black", [ "v0" ] ],
+    [ "esp:3V3", "oled1:VCC", "red", [ "v0" ] ],
+    [ "esp:21", "oled1:SDA", "green", [ "v0" ] ],
+    [ "esp:22", "oled1:SCL", "blue", [ "v0" ] ],
+    [ "esp:18", "led_green:A", "green", [ "v0" ] ],
+    [ "esp:GND.2", "led_green:C", "black", [ "v0" ] ],
+    [ "esp:19", "led_red:A", "red", [ "v0" ] ],
+    [ "esp:GND.2", "led_red:C", "black", [ "v0" ] ],
+    [ "esp:GND.2", "bz1:1", "black", [ "v0" ] ],
+    [ "esp:23", "bz1:2", "purple", [ "v0" ] ]
+  ],
+  "dependencies": {}
+}

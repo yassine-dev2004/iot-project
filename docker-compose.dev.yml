@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: smartdoor-postgres-dev
+    environment:
+      POSTGRES_DB: smartdoor
+      POSTGRES_USER: smartdoor
+      POSTGRES_PASSWORD: smartdoor_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: smartdoor-mosquitto-dev
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./iot/mosquitto.conf:/mosquitto/config/mosquitto.conf
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smartdoor-backend-dev
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/smartdoor
+      SPRING_DATASOURCE_USERNAME: smartdoor
+      SPRING_DATASOURCE_PASSWORD: smartdoor_secret
+      SNAPSHOTS_DIR: /app/snapshots
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_dev_data:

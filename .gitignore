@@ -1,0 +1,50 @@
+# Secrets & Environment
+.env
+*.env
+!.env.example
+!edge/.env.example
+
+# Personal Data, Local Face Embeddings & Snapshots (Privacy Hard Rule)
+*.db
+*.db-journal
+*.db-wal
+edge/snapshots/
+edge/known_people/*
+!edge/known_people/.gitkeep
+vps_snapshots/
+logs/
+snapshots/
+
+# Large Binaries & Downloaded Models
+cloudflared.exe
+*.apk
+edge/models/*.onnx
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+venv/
+.venv/
+
+# Flutter / Android / Gradle Build Artifacts
+mobile/build/
+mobile/.dart_tool/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/android/.gradle/
+mobile/android/local.properties
+mobile/android/app/build/
+
+# Java / Maven
+backend/target/
+
+# Node / Web
+node_modules/
+dist/
+
+# IDE & OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,15 @@
+{
+  "name": "smart-door-web",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "lucide": "^0.344.0"
+  },
+  "devDependencies": {
+    "vite": "^5.1.0"
+  }
+}

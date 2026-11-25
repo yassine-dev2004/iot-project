@@ -1,0 +1,18 @@
+[Unit]
+Description=Smart Door Camera Edge Surveillance Daemon
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/opt/smart-door/edge
+ExecStart=/opt/smart-door/venv/bin/python -m edge.main run --source picam --mqtt
+Restart=always
+RestartSec=5
+EnvironmentFile=/opt/smart-door/edge/.env
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

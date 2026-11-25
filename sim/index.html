@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sentinel Home — 3D Full-House Architectural Digital Twin</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-glass: rgba(9, 9, 11, 0.86);
+      --bg-card: rgba(24, 24, 27, 0.84);
+      --border: rgba(255, 255, 255, 0.09);
+      --border-strong: rgba(255, 255, 255, 0.2);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --green: #10b981;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --blue: #3b82f6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      background: #09090b;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+    .mono { font-family: 'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums; }
+
+    #canvas-container { position: fixed; inset: 0; z-index: 1; cursor: grab; }
+    #canvas-container:active { cursor: grabbing; }
+
+    /* TOP TOOLBAR */
+    #top-bar {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 12; display: flex; align-items: center; gap: 4px;
+      background: var(--bg-glass); backdrop-filter: blur(16px);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 5px 6px; box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+    }
+    .cam-chip {
+      background: transparent; border: 1px solid transparent; color: var(--text-secondary);
+      padding: 6px 11px; border-radius: 7px; font-family: inherit;
+      font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s;
+      display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; text-decoration: none;
+    }
+    .cam-chip svg { width: 14px; height: 14px; stroke-width: 1.75; }
+    .cam-chip:hover { color: var(--text-primary); background: rgba(255,255,255,0.06); }
+    .cam-chip.active {
+      background: #fafafa; color: #09090b; font-weight: 600;
+    }
+    .divider-v { width: 1px; height: 18px; background: var(--border); margin: 0 4px; }
+
+    /* LEFT CONTROL DECK */
+    #left-panel {
+      position: fixed; top: 16px; left: 16px; z-index: 10;
+      width: 372px; max-height: calc(100vh - 32px); overflow-y: auto;
+      background: var(--bg-glass); backdrop-filter: blur(18px);
+      border: 1px solid var(--border); border-radius: 14px;
+      padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    }
+    .brand-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .brand-title { font-size: 15px; font-weight: 700; letter-spacing: -0.02em; display: flex; align-items: center; gap: 8px; }
+    .sim-pill {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 5px;
+      background: rgba(245, 158, 11, 0.14); border: 1px solid rgba(245, 158, 11, 0.35);
+      color: #fbbf24;
+    }
+    .subtitle { font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-bottom: 14px; }
+
+    .section-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted); margin-bottom: 8px; display: flex; justify-content: space-between;
+    }
+
+    .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .scen-btn {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 9px; padding: 10px 11px; color: var(--text-primary);
+      font-family: inherit; text-align: left; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .scen-btn:hover { border-color: var(--border-strong); background: rgba(39, 39, 42, 0.9); }
+    .scen-btn.running { border-color: #fafafa; background: rgba(255,255,255,0.1); }
+    .scen-title { font-size: 12.5px; font-weight: 600; display: flex; align-items: center; gap: 7px; }
+    .scen-title svg { width: 14px; height: 14px; stroke-width: 1.85; flex-shrink: 0; }
+    .scen-desc { font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: block; line-height: 1.3; }
+
+    .bell-btn {
+      width: 100%; margin-bottom: 14px; padding: 8px 12px;
+      border-radius: 8px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text-primary);
+      font-family: inherit; font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .bell-btn:hover { border-color: var(--border-strong); background: rgba(39,39,42,0.9); }
+    .bell-btn svg { width: 14px; height: 14px; }
+
+    /* PIPELINE TELEMETRY */
+    .pipeline-wrap {
+      background: rgba(12, 12, 14, 0.85); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .stage-row {
+      display: flex; align-items: center; gap: 10px; padding: 7px 8px;
+      border-radius: 7px; border: 1px solid transparent; transition: all 0.2s;
+    }
+    .stage-row.active { background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.35); }
+    .stage-row.done-ok { background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); }
+    .stage-row.done-alert { background: rgba(239, 68, 68, 0.12); border-color: rgba(239, 68, 68, 0.35); }
+    .stage-num {
+      width: 20px; height: 20px; border-radius: 5px; font-size: 10.5px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      background: #27272a; color: #a1a1aa; flex-shrink: 0;
+    }
+    .stage-row.active .stage-num { background: var(--blue); color: #fff; }
+    .stage-row.done-ok .stage-num { background: var(--green); color: #052e16; }
+    .stage-row.done-alert .stage-num { background: var(--red); color: #fff; }
+    .stage-info { flex: 1; min-width: 0; }
+    .stage-name { font-size: 10px; color: var(--text-muted); font-weight: 500; }
+    .stage-val { font-size: 11px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+
+    .toggles-box {
+      margin-top: 12px; display: flex; flex-direction: column; gap: 7px;
+      padding-top: 10px; border-top: 1px solid var(--border); font-size: 11.5px; color: var(--text-secondary);
+    }
+    .toggle-line { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    input[type="checkbox"] { accent-color: #fafafa; width: 14px; height: 14px; cursor: pointer; }
+
+    /* RIGHT MOBILE COMPANION PREVIEW */
+    #phone-mockup {
+      position: fixed; top: 16px; right: 16px; z-index: 10;
+      width: 294px; background: #09090b;
+      border: 6px solid #27272a; border-radius: 36px;
+      padding: 12px 11px; box-shadow: 0 24px 60px rgba(0,0,0,0.75);
+    }
+    .notch { width: 68px; height: 15px; background: #000; border-radius: 999px; margin: 0 auto 8px auto; border: 1px solid #27272a; }
+    .phone-screen {
+      background: #111114; border-radius: 24px; padding: 13px; height: 500px;
+      display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,0.05);
+    }
+    .phone-top { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--text-muted); margin-bottom: 10px; }
+    .phone-app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .phone-app-title { font-size: 14px; font-weight: 700; letter-spacing: -0.02em; }
+    .sse-badge {
+      font-size: 10px; font-weight: 600; color: var(--green);
+      background: rgba(16, 185, 129, 0.12); padding: 2px 7px; border-radius: 999px;
+      display: inline-flex; align-items: center; gap: 5px;
+    }
+    .sse-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
+
+    .phone-cam-preview {
+      position: relative; height: 112px; border-radius: 10px; overflow: hidden;
+      background: #050507; border: 1px solid var(--border); margin-bottom: 10px;
+    }
+    #pip-canvas { width: 100%; height: 100%; display: block; }
+    .pip-tag {
+      position: absolute; top: 6px; left: 7px; font-size: 9px; font-weight: 600;
+      background: rgba(9, 9, 11, 0.82); color: #fafafa; padding: 2px 6px; border-radius: 4px;
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    #notif-feed { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 7px; }
+    #notif-feed::-webkit-scrollbar { width: 3px; }
+    #notif-feed::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+
+    .notif-card {
+      background: #18181c; border: 1px solid var(--border);
+      border-radius: 10px; padding: 9px 10px;
+      animation: slideIn 0.25s ease-out;
+    }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+    .notif-head { display: flex; justify-content: space-between; font-size: 9.5px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+    .tag-ok { color: var(--green); }
+    .tag-alert { color: var(--red); }
+    .tag-info { color: var(--amber); }
+    .notif-body { font-size: 11.5px; font-weight: 500; color: #fafafa; margin-top: 4px; line-height: 1.35; }
+    .notif-meta { font-size: 9.5px; color: var(--text-muted); margin-top: 3px; }
+
+    .phone-lock-bar {
+      margin-top: 9px; padding: 9px 10px; border-radius: 10px;
+      background: #18181c; border: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center; font-size: 11px;
+    }
+    .lock-pill {
+      font-weight: 600; font-size: 10.5px; padding: 3px 8px; border-radius: 5px;
+      background: rgba(239, 68, 68, 0.14); color: var(--red);
+    }
+    .lock-pill.unlocked { background: rgba(16, 185, 129, 0.16); color: var(--green); }
+
+    #bottom-hint {
+      position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+      z-index: 8; background: var(--bg-glass); backdrop-filter: blur(12px);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 14px; font-size: 11px; color: var(--text-muted);
+      pointer-events: none; display: flex; gap: 16px; white-space: nowrap;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+</head>
+<body>
+
+  <div id="canvas-container"></div>
+
+  <!-- TOP CAMERA & ENVIRONMENT TOOLBAR (NO EMOJIS, PURE SVG ICONS) -->
+  <div id="top-bar">
+    <button class="cam-chip active" id="view-overview" onclick="setCameraPreset('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+      Full House
+    </button>
+    <button class="cam-chip" id="view-porch" onclick="setCameraPreset('porch')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+      Front Porch
+    </button>
+    <button class="cam-chip" id="view-picam" onclick="setCameraPreset('picam')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      Pi Cam POV
+    </button>
+    <button class="cam-chip" id="view-iot" onclick="setCameraPreset('iot')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/></svg>
+      ESP32 OLED
+    </button>
+    <div class="divider-v"></div>
+    <button class="cam-chip" id="btn-daynight" onclick="toggleDayNight()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span id="lbl-daynight">Night Mode</span>
+    </button>
+    <button class="cam-chip" id="btn-audio" onclick="toggleAudio()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+      <span id="lbl-audio">Sound On</span>
+    </button>
+    <a class="cam-chip" href="../web/index.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </a>
+    <a class="cam-chip" href="enclosure/smart_door_case.stl" download="smart_door_case.stl">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      STL Case
+    </a>
+  </div>
+
+  <!-- LEFT SCENARIO & PIPELINE DECK -->
+  <div id="left-panel">
+    <div class="brand-row">
+      <div class="brand-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Sentinel 3D Twin
+      </div>
+      <span class="sim-pill">Simulated ML</span>
+    </div>
+    <p class="subtitle">
+      Full two-story residence model with Raspberry Pi FOV pyramid, live ESP32 SSD1306 OLED, servo deadbolt, and articulated visitor choreography.
+    </p>
+
+    <div class="section-label">
+      <span>Simulation Scenarios</span>
+      <span class="mono" id="actor-state-label" style="color:var(--text-primary);">STANDBY</span>
+    </div>
+    <div class="scenario-grid">
+      <button class="scen-btn" id="btn-known" onclick="startScenario('known')">
+        <div class="scen-title">
+          <svg style="color:var(--green);" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+          Known Person
+        </div>
+        <span class="scen-desc">Alice arrives, SFace matches, door unlocks 10s</span>
+      </button>
+      <button class="scen-btn" id="btn-stranger" onclick="startScenario('stranger')">
+        <div class="scen-title">
+          <svg style="color:var(--red);" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Stranger Lingers
+        </div>
+        <span class="scen-desc">Unrecognized face, lock held, red strobe + siren</span>
+      </button>
+      <button class="scen-btn" id="btn-courier" onclick="startScenario('courier')">
+        <div class="scen-title">
+          <svg style="color:var(--amber);" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          Package Delivery
+        </div>
+        <span class="scen-desc">Courier drops parcel on doormat and leaves</span>
+      </button>
+      <button class="scen-btn" id="btn-empty" onclick="startScenario('empty')">
+        <div class="scen-title">
+          <svg style="color:var(--text-secondary);" viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+          Empty (IGNORE)
+        </div>
+        <span class="scen-desc">Ambient leaf motion filtered out by Gemini</span>
+      </button>
+    </div>
+
+    <button class="bell-btn" onclick="ringDoorbellManual()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      Trigger Doorbell Switch (MQTT <span class="mono">door/bell</span>)
+    </button>
+
+    <div class="section-label"><span>Edge-to-Cloud Pipeline</span></div>
+    <div class="pipeline-wrap">
+      <div class="stage-row" id="st-1">
+        <div class="stage-num mono">1</div>
+        <div class="stage-info">
+          <div class="stage-name">PIR Motion & Frame Capture</div>
+          <div class="stage-val mono" id="val-1">Idle • Low-power sleep</div>
+        </div>
+      </div>
+      <div class="stage-row" id="st-2">
+        <div class="stage-num mono">2</div>
+        <div class="stage-info">
+          <div class="stage-name">YuNet Face Detection & Liveness</div>
+          <div class="stage-val mono" id="val-2">Waiting for subject</div>
+        </div>
+      </div>
+      <div class="stage-row" id="st-3">
+        <div class="stage-num mono">3</div>
+        <div class="stage-info">
+          <div class="stage-name">Local SFace Matching (On Pi)</div>
+          <div class="stage-val mono" id="val-3">128-D embeddings local only</div>
+        </div>
+      </div>
+      <div class="stage-row" id="st-4">
+        <div class="stage-num mono">4</div>
+        <div class="stage-info">
+          <div class="stage-name">Gemini Scene Caption</div>
+          <div class="stage-val mono" id="val-4">No snapshot dispatched</div>
+        </div>
+      </div>
+      <div class="stage-row" id="st-5">
+        <div class="stage-num mono">5</div>
+        <div class="stage-info">
+          <div class="stage-name">ESP32 Actuator & Mobile SSE</div>
+          <div class="stage-val mono" id="val-5">Locked (0°) • OLED Standby</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toggles-box">
+      <label class="toggle-line">
+        <span>Camera FOV Frustum Overlay</span>
+        <input type="checkbox" id="chk-fov" checked onchange="toggleFovCone(this.checked)">
+      </label>
+      <label class="toggle-line">
+        <span>Forward Events to Backend (<span class="mono">POST /api/events</span>)</span>
+        <input type="checkbox" id="chk-backend">
+      </label>
+    </div>
+  </div>
+
+  <!-- RIGHT PHONE MOCKUP -->
+  <div id="phone-mockup">
+    <div class="notch"></div>
+    <div class="phone-screen">
+      <div class="phone-top mono">
+        <span id="phone-clock">14:20</span>
+        <span>5G • 98%</span>
+      </div>
+      <div class="phone-app-header">
+        <span class="phone-app-title">Sentinel Mobile</span>
+        <span class="sse-badge"><span class="sse-dot"></span>Live SSE</span>
+      </div>
+
+      <div class="phone-cam-preview" style="height:142px;">
+        <img id="live-pc-cam-img" alt="Live PC Camera" style="width:100%; height:100%; object-fit:cover; display:block;">
+        <canvas id="pip-canvas" width="260" height="142" style="display:none;"></canvas>
+        <span class="pip-tag mono" id="pip-source-tag">PC CAM LIVE</span>
+        <button onclick="togglePhoneCamMode()" style="position:absolute; top:6px; right:6px; background:rgba(9,9,11,0.82); color:#fafafa; border:1px solid rgba(255,255,255,0.18); border-radius:4px; font-size:9px; padding:2px 6px; cursor:pointer; font-family:'IBM Plex Mono',monospace;">Switch 3D</button>
+      </div>
+
+      <!-- LIVE REMOTE DOOR CONTROLS DIRECTLY ON SMARTPHONE -->
+      <div style="display:grid; grid-template-columns:1.3fr 1fr 0.75fr; gap:5px; margin-bottom:9px;">
+        <button onclick="remoteDoorCmd('unlock')" style="background:#10b981; color:#04130d; border:none; border-radius:7px; padding:7px 4px; font-size:10.5px; font-weight:700; cursor:pointer; font-family:inherit;">Open Door</button>
+        <button onclick="remoteDoorCmd('lock')" style="background:#27272a; color:#fafafa; border:1px solid rgba(255,255,255,0.12); border-radius:7px; padding:7px 4px; font-size:10.5px; font-weight:600; cursor:pointer; font-family:inherit;">Keep Locked</button>
+        <button onclick="remoteDoorCmd('alarm')" style="background:rgba(239,68,68,0.18); color:#f87171; border:1px solid rgba(239,68,68,0.35); border-radius:7px; padding:7px 4px; font-size:10.5px; font-weight:700; cursor:pointer; font-family:inherit;">Alarm</button>
+      </div>
+
+      <div id="notif-feed">
+        <div class="notif-card">
+          <div class="notif-head"><span class="tag-info">System Ready</span><span class="mono">Now</span></div>
+          <div class="notif-body">Front door edge camera & ESP32 node online.</div>
+          <div class="notif-meta mono">pi-front-door-01 • MQTT OK</div>
+        </div>
+      </div>
+
+      <div class="phone-lock-bar">
+        <span style="color:var(--text-secondary); font-weight:500;">Deadbolt</span>
+        <span class="lock-pill mono" id="phone-lock-pill">LOCKED</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottom-hint">
+    <span>Left Drag: Orbit 360°</span>
+    <span>Scroll: Zoom</span>
+    <span>Right Drag: Pan</span>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 1. SYNTHESIZED WEB AUDIO (SUBTLE HARDWARE CHIMES)
+    // =========================================================================
+    let audioEnabled = true;
+    let audioCtx = null;
+    function ensureAudio() {
+      if (!audioEnabled) return null;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+    function playTone(freq, dur, type = 'sine', gainVal = 0.07, delay = 0) {
+      const ctx = ensureAudio();
+      if (!ctx) return;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+      g.gain.setValueAtTime(0.0001, ctx.currentTime + delay);
+      g.gain.exponentialRampToValueAtTime(gainVal, ctx.currentTime + delay + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + dur);
+      osc.connect(g); g.connect(ctx.destination);
+      osc.start(ctx.currentTime + delay); osc.stop(ctx.currentTime + delay + dur + 0.02);
+    }
+    function sfxDoorbell() { playTone(659.25, 0.34, 'sine', 0.1, 0); playTone(523.25, 0.5, 'sine', 0.1, 0.26); }
+    function sfxUnlock() { playTone(587.33, 0.11, 'triangle', 0.08, 0); playTone(880, 0.2, 'triangle', 0.09, 0.11); }
+    function sfxAlarm() { for (let i = 0; i < 3; i++) { playTone(880, 0.13, 'sawtooth', 0.05, i * 0.25); playTone(620, 0.13, 'sawtooth', 0.05, i * 0.25 + 0.12); } }
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      document.getElementById('lbl-audio').innerText = audioEnabled ? 'Sound On' : 'Muted';
+    }
+
+    // =========================================================================
+    // 2. PROCEDURAL PBR CANVAS TEXTURES
+    // =========================================================================
+    function makeWoodTexture(base = '#6b3a19') {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = base; ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 240; i++) {
+        ctx.fillStyle = i % 2 === 0 ? 'rgba(28,12,4,0.22)' : 'rgba(165,98,48,0.16)';
+        ctx.fillRect(Math.random() * 512, 0, 2 + Math.random() * 8, 512);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    }
+
+    function makeConcreteStuccoTexture() {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#27272a'; ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 2200; i++) {
+        const v = 32 + Math.floor(Math.random() * 20);
+        ctx.fillStyle = `rgb(${v},${v},${v + 3})`;
+        ctx.fillRect(Math.random() * 512, Math.random() * 512, 3, 3);
+      }
+      // Subtle architectural concrete panel seams
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)'; ctx.lineWidth = 2;
+      for (let y = 128; y < 512; y += 128) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke(); }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, 2);
+      return tex;
+    }
+
+    function makeLightPlasterTexture() {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#d4d4d8'; ctx.fillRect(0, 0, 256, 256);
+      for (let i = 0; i < 1200; i++) {
+        const v = 198 + Math.floor(Math.random() * 22);
+        ctx.fillStyle = `rgb(${v},${v},${v - 3})`;
+        ctx.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, 2);
+      return tex;
+    }
+
+    function makePaverTexture() {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#18181b'; ctx.fillRect(0, 0, 512, 512);
+      for (let y = 0; y < 512; y += 64) {
+        for (let x = 0; x < 512; x += 64) {
+          const v = 42 + Math.floor(Math.random() * 14);
+          ctx.fillStyle = `rgb(${v},${v},${v + 4})`;
+          ctx.fillRect(x + 2, y + 2, 60, 60);
+        }
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(6, 6);
+      return tex;
+    }
+
+    function makeParcelTexture() {
+      const c = document.createElement('canvas'); c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#c2854c'; ctx.fillRect(0, 0, 256, 256);
+      ctx.fillStyle = '#9a602a'; ctx.fillRect(0, 112, 256, 28);
+      ctx.fillStyle = '#fafafa'; ctx.fillRect(28, 24, 114, 70);
+      ctx.fillStyle = '#09090b'; ctx.font = 'bold 11px monospace'; ctx.fillText('EXPRESS 24H', 36, 42);
+      for (let bx = 36; bx < 130; bx += 5) ctx.fillRect(bx, 52, bx % 3 === 0 ? 3 : 1.5, 28);
+      return new THREE.CanvasTexture(c);
+    }
+
+    // Live 3D SSD1306 OLED Canvas
+    const oledCanvas = document.createElement('canvas'); oledCanvas.width = 256; oledCanvas.height = 128;
+    const oledCtx = oledCanvas.getContext('2d');
+    const oledTexture = new THREE.CanvasTexture(oledCanvas);
+    function update3DOled(header, line1, line2, accent = '#38bdf8') {
+      oledCtx.fillStyle = '#05070a'; oledCtx.fillRect(0, 0, 256, 128);
+      oledCtx.fillStyle = '#facc15'; oledCtx.font = 'bold 17px monospace';
+      oledCtx.fillText(header.substring(0, 18), 10, 24);
+      oledCtx.strokeStyle = '#27272a'; oledCtx.lineWidth = 2;
+      oledCtx.beginPath(); oledCtx.moveTo(0, 34); oledCtx.lineTo(256, 34); oledCtx.stroke();
+      oledCtx.fillStyle = accent; oledCtx.font = 'bold 16px monospace';
+      oledCtx.fillText(line1.substring(0, 20), 10, 68);
+      oledCtx.fillStyle = '#e4e4e7'; oledCtx.font = '14px monospace';
+      oledCtx.fillText(line2.substring(0, 22), 10, 102);
+      oledTexture.needsUpdate = true;
+    }
+    update3DOled('ESP32 DOOR NODE', 'STATUS: LOCKED', 'MQTT: CONNECTED');
+
+    // =========================================================================
+    // 3. SCENE, CAMERAS, RENDERERS & ARCHITECTURAL LIGHTING
+    // =========================================================================
+    const container = document.getElementById('canvas-container');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x111318);
+    scene.fog = new THREE.FogExp2(0x111318, 0.018);
+
+    const camera = new THREE.PerspectiveCamera(44, window.innerWidth / window.innerHeight, 0.1, 150);
+    const piDoorCam = new THREE.PerspectiveCamera(62, 260 / 112, 0.15, 30);
+    piDoorCam.position.set(0, 3.42, 0.56);
+    piDoorCam.lookAt(0, 1.15, 2.7);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    container.appendChild(renderer.domElement);
+
+    const pipCanvas = document.getElementById('pip-canvas');
+    const pipCtx = pipCanvas.getContext('2d');
+    const pipRenderer = new THREE.WebGLRenderer({ antialias: true });
+    pipRenderer.setSize(260, 112);
+    pipRenderer.shadowMap.enabled = true;
+
+    const hemiLight = new THREE.HemisphereLight(0xe4e4e7, 0x18181b, 0.72);
+    scene.add(hemiLight);
+
+    const sunLight = new THREE.DirectionalLight(0xfff7ed, 1.25);
+    sunLight.position.set(11, 18, 12);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.set(2048, 2048);
+    sunLight.shadow.camera.left = -15; sunLight.shadow.camera.right = 15;
+    sunLight.shadow.camera.top = 15; sunLight.shadow.camera.bottom = -8;
+    sunLight.shadow.bias = -0.0005;
+    scene.add(sunLight);
+
+    const sconceLight = new THREE.PointLight(0xffedd5, 1.1, 9, 2);
+    sconceLight.position.set(-1.55, 2.55, 0.55); scene.add(sconceLight);
+    const garageLight = new THREE.PointLight(0xffedd5, 0.9, 10, 2);
+    garageLight.position.set(6.5, 3.4, 0.9); scene.add(garageLight);
+    const foyerLight = new THREE.PointLight(0xfde68a, 1.5, 8, 2);
+    foyerLight.position.set(0, 2.9, -1.6); scene.add(foyerLight);
+    const alarmLight = new THREE.PointLight(0xef4444, 0.0, 9, 2);
+    alarmLight.position.set(1.3, 2.2, 0.7); scene.add(alarmLight);
+
+    // =========================================================================
+    // 4. FULL TWO-STORY MODERN ARCHITECTURAL HOUSE + GARAGE + LANDSCAPING
+    // =========================================================================
+    const woodTex = makeWoodTexture('#6b3a19');
+    const cedarTex = makeWoodTexture('#8a5228');
+    const concreteTex = makeConcreteStuccoTexture();
+    const plasterTex = makeLightPlasterTexture();
+    const paverTex = makePaverTexture();
+    const parcelTex = makeParcelTexture();
+
+    const darkMetalMat = new THREE.MeshStandardMaterial({ color: 0x18181b, metalness: 0.72, roughness: 0.32 });
+    const concreteMat = new THREE.MeshStandardMaterial({ map: concreteTex, roughness: 0.85 });
+    const plasterMat = new THREE.MeshStandardMaterial({ map: plasterTex, roughness: 0.82 });
+    const warmWindowMat = new THREE.MeshStandardMaterial({
+      color: 0xfef3c7, emissive: 0xfde68a, emissiveIntensity: 0.42,
+      roughness: 0.15, metalness: 0.25, transparent: true, opacity: 0.88
+    });
+    const glassRailMat = new THREE.MeshStandardMaterial({
+      color: 0xd4d4d8, transparent: true, opacity: 0.28, roughness: 0.1, metalness: 0.4
+    });
+
+    // Ground Lawn + Driveway + Front Stone Walkway
+    const lawn = new THREE.Mesh(
+      new THREE.PlaneGeometry(60, 50),
+      new THREE.MeshStandardMaterial({ color: 0x1b3324, roughness: 0.96 })
+    );
+    lawn.rotation.x = -Math.PI / 2; lawn.position.y = -0.24; lawn.receiveShadow = true;
+    scene.add(lawn);
+
+    const stoneMat = new THREE.MeshStandardMaterial({ map: paverTex, roughness: 0.82 });
+    const porchDeck = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.24, 2.8), stoneMat);
+    porchDeck.position.set(0, -0.12, 1.1); porchDeck.receiveShadow = true; porchDeck.castShadow = true;
+    scene.add(porchDeck);
+
+    const step1 = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.12, 0.45), stoneMat);
+    step1.position.set(0, -0.18, 2.72); step1.receiveShadow = true; scene.add(step1);
+
+    const walkway = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.03, 9.0), stoneMat);
+    walkway.position.set(0, -0.23, 7.2); walkway.receiveShadow = true; scene.add(walkway);
+
+    // Asphalt Garage Driveway (Right side of house)
+    const driveway = new THREE.Mesh(
+      new THREE.BoxGeometry(5.2, 0.03, 12.0),
+      new THREE.MeshStandardMaterial({ color: 0x222226, roughness: 0.92 })
+    );
+    driveway.position.set(6.5, -0.225, 6.2); driveway.receiveShadow = true; scene.add(driveway);
+
+    // GROUND FLOOR STRUCTURE (Main House + Interior Foyer + Living Room Wing + Attached Garage)
+    const foyerFloor = new THREE.Mesh(new THREE.PlaneGeometry(5.6, 5.2), new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.45 }));
+    foyerFloor.rotation.x = -Math.PI / 2; foyerFloor.position.set(0, 0.005, -2.5); scene.add(foyerFloor);
+
+    const houseCoreBack = new THREE.Mesh(new THREE.BoxGeometry(14.0, 4.4, 0.3), concreteMat);
+    houseCoreBack.position.set(1.5, 2.2, -5.2); scene.add(houseCoreBack);
+
+    const leftWall = new THREE.Mesh(new THREE.BoxGeometry(5.8, 4.4, 0.4), concreteMat);
+    leftWall.position.set(-3.8, 2.2, 0); leftWall.castShadow = true; leftWall.receiveShadow = true; scene.add(leftWall);
+
+    const rightEntranceWall = new THREE.Mesh(new THREE.BoxGeometry(2.4, 4.4, 0.4), concreteMat);
+    rightEntranceWall.position.set(2.6, 2.2, 0); rightEntranceWall.castShadow = true; rightEntranceWall.receiveShadow = true; scene.add(rightEntranceWall);
+
+    const topHeaderWall = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.15, 0.4), concreteMat);
+    topHeaderWall.position.set(0.25, 3.82, 0); topHeaderWall.castShadow = true; scene.add(topHeaderWall);
+
+    // Left Living Room Large Panoramic Window
+    const lrWinFrame = new THREE.Mesh(new THREE.BoxGeometry(2.8, 2.3, 0.44), darkMetalMat);
+    lrWinFrame.position.set(-4.3, 1.85, 0); scene.add(lrWinFrame);
+    const lrWinGlass = new THREE.Mesh(new THREE.BoxGeometry(2.6, 2.1, 0.47), warmWindowMat);
+    lrWinGlass.position.set(-4.3, 1.85, 0); scene.add(lrWinGlass);
+
+    // Attached Modern Garage Wing (Right)
+    const garageBody = new THREE.Mesh(new THREE.BoxGeometry(5.6, 4.1, 5.8), concreteMat);
+    garageBody.position.set(6.5, 2.05, -2.6); garageBody.castShadow = true; garageBody.receiveShadow = true; scene.add(garageBody);
+    const garageDoor = new THREE.Mesh(new THREE.BoxGeometry(4.4, 2.8, 0.12), new THREE.MeshStandardMaterial({ map: cedarTex, roughness: 0.55 }));
+    garageDoor.position.set(6.5, 1.4, 0.31); garageDoor.castShadow = true; scene.add(garageDoor);
+    // Horizontal garage panel ribs
+    for (let gy = 0.55; gy < 2.6; gy += 0.55) {
+      const rib = new THREE.Mesh(new THREE.BoxGeometry(4.42, 0.03, 0.14), darkMetalMat);
+      rib.position.set(6.5, gy, 0.31); scene.add(rib);
+    }
+
+    // SECOND STORY CANTILEVERED MODERN ARCHITECTURE + BALCONY + ROOF OVERHANG
+    const upperStoryMain = new THREE.Mesh(new THREE.BoxGeometry(11.6, 3.3, 6.2), plasterMat);
+    upperStoryMain.position.set(-0.6, 5.95, -2.1); upperStoryMain.castShadow = true; upperStoryMain.receiveShadow = true;
+    scene.add(upperStoryMain);
+
+    // Flat Modern Roof Fascia Slab
+    const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(12.6, 0.32, 7.2), darkMetalMat);
+    roofSlab.position.set(-0.6, 7.72, -1.85); roofSlab.castShadow = true; scene.add(roofSlab);
+
+    // Upper Floor Panoramic Bedroom Windows
+    for (const ux of [-3.9, 0.1, 3.2]) {
+      const wf = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.85, 0.18), darkMetalMat);
+      wf.position.set(ux, 6.0, 1.02); scene.add(wf);
+      const wg = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.65, 0.21), warmWindowMat);
+      wg.position.set(ux, 6.0, 1.02); scene.add(wg);
+    }
+
+    // Upper Terrace Glass Railing over Garage Roof
+    const balconyFloor = new THREE.Mesh(new THREE.BoxGeometry(5.7, 0.18, 5.9), darkMetalMat);
+    balconyFloor.position.set(6.5, 4.18, -2.55); scene.add(balconyFloor);
+    const glassRail = new THREE.Mesh(new THREE.BoxGeometry(5.5, 1.05, 0.05), glassRailMat);
+    glassRail.position.set(6.5, 4.8, 0.32); scene.add(glassRail);
+    const topRailBar = new THREE.Mesh(new THREE.BoxGeometry(5.55, 0.05, 0.07), darkMetalMat);
+    topRailBar.position.set(6.5, 5.33, 0.32); scene.add(topRailBar);
+
+    // Porch Overhang Canopy + Cedar Soffit + Steel Columns
+    const canopy = new THREE.Mesh(new THREE.BoxGeometry(7.0, 0.22, 2.6), darkMetalMat);
+    canopy.position.set(0, 4.08, 1.15); canopy.castShadow = true; scene.add(canopy);
+    const soffit = new THREE.Mesh(new THREE.PlaneGeometry(6.7, 2.4), new THREE.MeshStandardMaterial({ map: cedarTex, roughness: 0.6 }));
+    soffit.rotation.x = Math.PI / 2; soffit.position.set(0, 3.96, 1.15); scene.add(soffit);
+    for (const cx of [-3.15, 3.15]) {
+      const col = new THREE.Mesh(new THREE.BoxGeometry(0.15, 4.05, 0.15), darkMetalMat);
+      col.position.set(cx, 2.0, 2.3); col.castShadow = true; scene.add(col);
+    }
+
+    // Vertical Cedar Slats beside Front Door + Sidelight Window + Wall Sconce
+    const slatMat = new THREE.MeshStandardMaterial({ map: cedarTex, roughness: 0.55 });
+    for (let i = 0; i < 6; i++) {
+      const s = new THREE.Mesh(new THREE.BoxGeometry(0.065, 3.8, 0.06), slatMat);
+      s.position.set(-1.95 - i * 0.125, 1.9, 0.22); scene.add(s);
+    }
+    const sidelightFrame = new THREE.Mesh(new THREE.BoxGeometry(0.50, 3.3, 0.42), darkMetalMat);
+    sidelightFrame.position.set(1.14, 1.65, 0); scene.add(sidelightFrame);
+    const sidelightGlass = new THREE.Mesh(new THREE.BoxGeometry(0.36, 3.05, 0.45), warmWindowMat);
+    sidelightGlass.position.set(1.14, 1.65, 0); scene.add(sidelightGlass);
+
+    const sconceBox = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.34, 0.12), darkMetalMat);
+    sconceBox.position.set(-1.55, 2.55, 0.25); scene.add(sconceBox);
+    const sconceGlow = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.05, 0.05, 0.22, 16),
+      new THREE.MeshStandardMaterial({ color: 0xfffbeb, emissive: 0xfde047, emissiveIntensity: 1.3 })
+    );
+    sconceGlow.position.set(-1.55, 2.55, 0.30); scene.add(sconceGlow);
+
+    // Ornamental Planters + Shrubs + Pathway Bollard Lights
+    function createPlanter(px, pz) {
+      const g = new THREE.Group();
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.32, 0.58, 24), darkMetalMat);
+      pot.position.y = 0.29; pot.castShadow = true; g.add(pot);
+      const b1 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.36, 1), new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.85 }));
+      b1.position.y = 0.78; b1.castShadow = true; g.add(b1);
+      const b2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24, 1), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 }));
+      b2.position.y = 1.18; b2.castShadow = true; g.add(b2);
+      g.position.set(px, 0, pz); scene.add(g);
+    }
+    createPlanter(-2.35, 1.75);
+    createPlanter(2.45, 1.75);
+
+    // Architectural Pathway Bollards
+    for (const bx of [-1.45, 1.45]) {
+      for (const bz of [4.2, 6.8]) {
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.55, 12), darkMetalMat);
+        post.position.set(bx, 0.03, bz); scene.add(post);
+        const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.046, 0.046, 0.08, 12),
+          new THREE.MeshStandardMaterial({ color: 0xfffbeb, emissive: 0xfef08a, emissiveIntensity: 1.1 }));
+        cap.position.set(bx, 0.24, bz); scene.add(cap);
+      }
+    }
+
+    const doormat = new THREE.Mesh(
+      new THREE.BoxGeometry(1.65, 0.035, 0.95),
+      new THREE.MeshStandardMaterial({ color: 0x57534e, roughness: 0.98 })
+    );
+    doormat.position.set(-0.05, 0.018, 0.92); doormat.receiveShadow = true; scene.add(doormat);
+
+    // =========================================================================
+    // 5. OAK FRONT DOOR, LEVER HANDLE & SMART LOCK
+    // =========================================================================
+    const jambL = new THREE.Mesh(new THREE.BoxGeometry(0.10, 3.32, 0.42), darkMetalMat); jambL.position.set(-0.90, 1.66, 0); scene.add(jambL);
+    const jambR = new THREE.Mesh(new THREE.BoxGeometry(0.10, 3.32, 0.42), darkMetalMat); jambR.position.set(0.84, 1.66, 0); scene.add(jambR);
+    const jambT = new THREE.Mesh(new THREE.BoxGeometry(1.84, 0.10, 0.42), darkMetalMat); jambT.position.set(-0.03, 3.27, 0); scene.add(jambT);
+
+    const doorPivot = new THREE.Group();
+    doorPivot.position.set(-0.85, 0, 0.06); scene.add(doorPivot);
+
+    const oakMat = new THREE.MeshStandardMaterial({ map: woodTex, roughness: 0.38 });
+    const doorLeaf = new THREE.Mesh(new THREE.BoxGeometry(1.64, 3.22, 0.09), oakMat);
+    doorLeaf.position.set(0.82, 1.61, 0); doorLeaf.castShadow = true; doorPivot.add(doorLeaf);
+
+    const panelMat = new THREE.MeshStandardMaterial({ map: cedarTex, roughness: 0.45 });
+    for (const [px, py] of [[0.48, 2.38], [1.16, 2.38], [0.48, 1.05], [1.16, 1.05]]) {
+      const pm = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.92, 0.115), panelMat);
+      pm.position.set(px, py, 0); doorPivot.add(pm);
+    }
+    const brassMat = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.88, roughness: 0.22 });
+    const kickplate = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.2, 0.105), brassMat);
+    kickplate.position.set(0.82, 0.15, 0); doorPivot.add(kickplate);
+
+    const escutcheon = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.34, 0.04), darkMetalMat);
+    escutcheon.position.set(1.46, 1.54, 0.06); doorPivot.add(escutcheon);
+
+    const lockRingMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 1.3 });
+    const lockRing = new THREE.Mesh(new THREE.TorusGeometry(0.038, 0.009, 12, 28), lockRingMat);
+    lockRing.position.set(1.46, 1.62, 0.083); doorPivot.add(lockRing);
+
+    const handlePivot = new THREE.Group();
+    handlePivot.position.set(1.46, 1.45, 0.09);
+    const leverGrip = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.026, 0.026), brassMat);
+    leverGrip.position.set(-0.06, 0, 0.02); handlePivot.add(leverGrip);
+    doorPivot.add(handlePivot);
+
+    // =========================================================================
+    // 6. PI AI CAMERA + FOV PYRAMID + ESP32 OLED STATION
+    // =========================================================================
+    const camGroup = new THREE.Group(); camGroup.position.set(0, 3.50, 0.24); scene.add(camGroup);
+    const camMount = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.18, 16), darkMetalMat);
+    camMount.rotation.x = Math.PI / 2; camMount.position.z = 0.08; camGroup.add(camMount);
+
+    const camBodyGroup = new THREE.Group(); camBodyGroup.position.set(0, 0, 0.22); camBodyGroup.rotation.x = 0.42; camGroup.add(camBodyGroup);
+    const camShell = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.20, 0.30), new THREE.MeshStandardMaterial({ color: 0xe4e4e7, roughness: 0.28 }));
+    camShell.castShadow = true; camBodyGroup.add(camShell);
+    const camVisor = new THREE.Mesh(new THREE.BoxGeometry(0.31, 0.03, 0.34), darkMetalMat);
+    camVisor.position.set(0, 0.105, 0.03); camBodyGroup.add(camVisor);
+    const lensBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.06, 28), darkMetalMat);
+    lensBarrel.rotation.x = Math.PI / 2; lensBarrel.position.z = 0.16; camBodyGroup.add(lensBarrel);
+    const lensGlass = new THREE.Mesh(new THREE.SphereGeometry(0.05, 24, 16), new THREE.MeshStandardMaterial({ color: 0x1d4ed8, metalness: 0.95, roughness: 0.05 }));
+    lensGlass.position.z = 0.175; camBodyGroup.add(lensGlass);
+
+    const irLedMat = new THREE.MeshStandardMaterial({ color: 0x330a0a, emissive: 0xff1133, emissiveIntensity: 0.05 });
+    for (let a = 0; a < 8; a++) {
+      const ang = (a / 8) * Math.PI * 2;
+      const ir = new THREE.Mesh(new THREE.SphereGeometry(0.008, 8, 8), irLedMat);
+      ir.position.set(Math.cos(ang) * 0.085, Math.sin(ang) * 0.072, 0.152); camBodyGroup.add(ir);
+    }
+
+    const fovGroup = new THREE.Group();
+    const fovGeo = new THREE.ConeGeometry(2.35, 4.4, 4, 1, true);
+    fovGeo.translate(0, -2.2, 0); fovGeo.rotateX(-Math.PI / 2); fovGeo.rotateZ(Math.PI / 4);
+    fovGroup.add(new THREE.Mesh(fovGeo, new THREE.MeshBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.11, side: THREE.DoubleSide, depthWrite: false })));
+    fovGroup.add(new THREE.LineSegments(new THREE.EdgesGeometry(fovGeo), new THREE.LineBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.42 })));
+    const scanPlane = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 1.1), new THREE.MeshBasicMaterial({ color: 0x60a5fa, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false }));
+    fovGroup.add(scanPlane);
+    fovGroup.position.set(0, 0, 0.18); camBodyGroup.add(fovGroup);
+
+    // ESP32 OLED Station
+    const iotStation = new THREE.Group(); iotStation.position.set(1.58, 1.48, 0.22); scene.add(iotStation);
+    iotStation.add(new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.44, 0.07), darkMetalMat));
+    const oledScreen = new THREE.Mesh(new THREE.PlaneGeometry(0.21, 0.105), new THREE.MeshBasicMaterial({ map: oledTexture }));
+    oledScreen.position.set(0, 0.11, 0.037); iotStation.add(oledScreen);
+    const pirDomeMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, emissive: 0xf59e0b, emissiveIntensity: 0.0 });
+    const pirDome = new THREE.Mesh(new THREE.IcosahedronGeometry(0.038, 1), pirDomeMat);
+    pirDome.position.set(-0.055, -0.02, 0.035); iotStation.add(pirDome);
+    const iotGreenMat = new THREE.MeshStandardMaterial({ color: 0x064e3b, emissive: 0x10b981, emissiveIntensity: 0.0 });
+    const iotRedMat = new THREE.MeshStandardMaterial({ color: 0x450a0a, emissive: 0xef4444, emissiveIntensity: 0.35 });
+    const ledG = new THREE.Mesh(new THREE.SphereGeometry(0.013, 12, 12), iotGreenMat); ledG.position.set(0.045, -0.005, 0.038); iotStation.add(ledG);
+    const ledR = new THREE.Mesh(new THREE.SphereGeometry(0.013, 12, 12), iotRedMat); ledR.position.set(0.08, -0.005, 0.038); iotStation.add(ledR);
+    const bellHaloMat = new THREE.MeshStandardMaterial({ color: 0xfafafa, emissive: 0x3b82f6, emissiveIntensity: 0.9 });
+    const bellHalo = new THREE.Mesh(new THREE.TorusGeometry(0.036, 0.006, 12, 24), bellHaloMat); bellHalo.position.set(0, -0.13, 0.038); iotStation.add(bellHalo);
+    const bellCap = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.028, 0.02, 20), new THREE.MeshStandardMaterial({ color: 0xd4d4d8, metalness: 0.85, roughness: 0.2 }));
+    bellCap.rotation.x = Math.PI / 2; bellCap.position.set(0, -0.13, 0.042); iotStation.add(bellCap);
+
+    // =========================================================================
+    // 7. ARTICULATED 3D CHARACTERS & PARCEL
+    // =========================================================================
+    function makeBillboardBadge(text, bgHex, borderHex) {
+      const c = document.createElement('canvas'); c.width = 512; c.height = 92;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = bgHex; ctx.strokeStyle = borderHex; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.roundRect(14, 14, 484, 64, 14); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#fafafa'; ctx.font = '600 28px Inter, sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 47);
+      const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+      sp.scale.set(1.5, 0.27, 1); sp.position.y = 2.12;
+      return sp;
+    }
+
+    function createArticulatedActor() {
+      const root = new THREE.Group();
+      const skinMat = new THREE.MeshStandardMaterial({ color: 0xf1c27d, roughness: 0.55 });
+      const coatMat = new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.65 });
+      const pantsMat = new THREE.MeshStandardMaterial({ color: 0x27272a, roughness: 0.8 });
+      const shoeMat = new THREE.MeshStandardMaterial({ color: 0x09090b, roughness: 0.5 });
+      const hairMat = new THREE.MeshStandardMaterial({ color: 0x3b2314, roughness: 0.7 });
+      const capMat = new THREE.MeshStandardMaterial({ color: 0x1d4ed8, roughness: 0.5 });
+
+      const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.19, 0.68, 18), coatMat);
+      torso.position.y = 1.12; torso.castShadow = true; root.add(torso);
+      const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 12), coatMat);
+      shoulders.scale.set(1.15, 0.45, 0.75); shoulders.position.y = 1.43; root.add(shoulders);
+
+      const headPivot = new THREE.Group(); headPivot.position.y = 1.66; root.add(headPivot);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.175, 24, 20), skinMat); head.castShadow = true; headPivot.add(head);
+      for (const ex of [-0.058, 0.058]) {
+        const eye = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 10), new THREE.MeshBasicMaterial({ color: 0x09090b }));
+        eye.position.set(ex, 0.02, 0.16); headPivot.add(eye);
+      }
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.184, 20, 16, 0, Math.PI * 2, 0, Math.PI * 0.62), hairMat);
+      hair.rotation.x = -0.25; hair.position.y = 0.02; headPivot.add(hair);
+
+      const courierCap = new THREE.Group();
+      courierCap.add(new THREE.Mesh(new THREE.SphereGeometry(0.186, 18, 14, 0, Math.PI * 2, 0, Math.PI * 0.55), capMat));
+      const visor = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.02, 16, 1, false, -Math.PI / 2, Math.PI), capMat);
+      visor.position.set(0, 0.02, 0.11); courierCap.add(visor);
+      courierCap.visible = false; headPivot.add(courierCap);
+
+      function makeArm(side) {
+        const p = new THREE.Group(); p.position.set(side * 0.27, 1.40, 0);
+        const u = new THREE.Mesh(new THREE.CylinderGeometry(0.058, 0.048, 0.52, 12), coatMat); u.position.y = -0.24; u.castShadow = true; p.add(u);
+        const h = new THREE.Mesh(new THREE.SphereGeometry(0.052, 12, 12), skinMat); h.position.y = -0.52; p.add(h);
+        root.add(p); return p;
+      }
+      function makeLeg(side) {
+        const p = new THREE.Group(); p.position.set(side * 0.11, 0.78, 0);
+        const l = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.058, 0.72, 14), pantsMat); l.position.y = -0.36; l.castShadow = true; p.add(l);
+        const s = new THREE.Mesh(new THREE.BoxGeometry(0.13, 0.09, 0.24), shoeMat); s.position.set(0, -0.73, 0.04); s.castShadow = true; p.add(s);
+        root.add(p); return p;
+      }
+      const leftArm = makeArm(-1), rightArm = makeArm(1), leftLeg = makeLeg(-1), rightLeg = makeLeg(1);
+
+      const heldBox = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.34, 0.40), new THREE.MeshStandardMaterial({ map: parcelTex, roughness: 0.75 }));
+      heldBox.position.set(0, 1.05, 0.34); heldBox.castShadow = true; heldBox.visible = false; root.add(heldBox);
+
+      const reticleMat = new THREE.LineBasicMaterial({ color: 0x3b82f6 });
+      const reticle = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(0.44, 0.44, 0.44)), reticleMat);
+      reticle.position.y = 1.66; reticle.visible = false; root.add(reticle);
+
+      root.visible = false; scene.add(root);
+      return { root, coatMat, hair, courierCap, headPivot, leftArm, rightArm, leftLeg, rightLeg, heldBox, reticle, reticleMat, badge: null };
+    }
+
+    const actor = createArticulatedActor();
+    const droppedParcel = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.36, 0.42), new THREE.MeshStandardMaterial({ map: parcelTex, roughness: 0.75 }));
+    droppedParcel.position.set(0.32, 0.20, 0.92); droppedParcel.rotation.y = 0.22; droppedParcel.castShadow = true; droppedParcel.visible = false;
+    scene.add(droppedParcel);
+
+    // =========================================================================
+    // 8. ORBIT CONTROLS & FULL-HOUSE CAMERA PRESETS
+    // =========================================================================
+    const orbit = {
+      target: new THREE.Vector3(1.2, 2.5, 0.0),
+      desiredTarget: new THREE.Vector3(1.2, 2.5, 0.0),
+      theta: 0.44, phi: 1.32, radius: 14.5,
+      desiredTheta: 0.44, desiredPhi: 1.32, desiredRadius: 14.5,
+      mode: 'orbit'
+    };
+
+    function setCameraPreset(name) {
+      document.querySelectorAll('#top-bar .cam-chip').forEach(b => { if (b.id.startsWith('view-')) b.classList.remove('active'); });
+      document.getElementById('view-' + name)?.classList.add('active');
+      if (name === 'picam') { orbit.mode = 'picam'; return; }
+      orbit.mode = 'orbit';
+      if (name === 'overview') {
+        orbit.desiredTarget.set(1.2, 2.5, 0.0); orbit.desiredTheta = 0.44; orbit.desiredPhi = 1.32; orbit.desiredRadius = 14.5;
+      } else if (name === 'porch') {
+        orbit.desiredTarget.set(0, 1.55, 0.8); orbit.desiredTheta = 0.26; orbit.desiredPhi = 1.36; orbit.desiredRadius = 6.8;
+      } else if (name === 'iot') {
+        orbit.desiredTarget.set(1.42, 1.50, 0.15); orbit.desiredTheta = 0.12; orbit.desiredPhi = 1.50; orbit.desiredRadius = 1.42;
+      }
+    }
+
+    let dragMode = null, lastPtr = { x: 0, y: 0 };
+    container.addEventListener('contextmenu', e => e.preventDefault());
+    container.addEventListener('mousedown', e => {
+      if (orbit.mode === 'picam') setCameraPreset('porch');
+      dragMode = e.button === 2 ? 'pan' : 'rotate';
+      lastPtr = { x: e.clientX, y: e.clientY };
+    });
+    window.addEventListener('mouseup', () => dragMode = null);
+    window.addEventListener('mousemove', e => {
+      if (!dragMode) return;
+      const dx = e.clientX - lastPtr.x, dy = e.clientY - lastPtr.y;
+      lastPtr = { x: e.clientX, y: e.clientY };
+      if (dragMode === 'rotate') {
+        orbit.desiredTheta -= dx * 0.0055;
+        orbit.desiredPhi = Math.max(0.32, Math.min(1.56, orbit.desiredPhi - dy * 0.0055));
+      } else {
+        orbit.desiredTarget.x -= dx * 0.008;
+        orbit.desiredTarget.y = Math.max(0.4, Math.min(6.0, orbit.desiredTarget.y + dy * 0.008));
+      }
+    });
+    container.addEventListener('wheel', e => {
+      e.preventDefault();
+      if (orbit.mode === 'picam') setCameraPreset('porch');
+      orbit.desiredRadius = Math.max(1.2, Math.min(26.0, orbit.desiredRadius + e.deltaY * 0.008));
+    }, { passive: false });
+
+    // =========================================================================
+    // 9. SCENARIOS & TELEMETRY
+    // =========================================================================
+    let isNight = false;
+    function toggleDayNight() {
+      isNight = !isNight;
+      document.getElementById('lbl-daynight').innerText = isNight ? 'Day Mode' : 'Night Mode';
+      scene.background.setHex(isNight ? 0x05060a : 0x111318);
+      scene.fog.color.setHex(isNight ? 0x05060a : 0x111318);
+      sunLight.intensity = isNight ? 0.14 : 1.25;
+      hemiLight.intensity = isNight ? 0.18 : 0.72;
+      sconceLight.intensity = isNight ? 2.0 : 1.1;
+      garageLight.intensity = isNight ? 1.8 : 0.9;
+      warmWindowMat.emissiveIntensity = isNight ? 0.95 : 0.42;
+      irLedMat.emissiveIntensity = isNight ? 2.2 : 0.05;
+    }
+    function toggleFovCone(v) { fovGroup.visible = v; }
+
+    let targetDoorAngle = 0, targetLeverAngle = 0, alarmActive = false, scenarioTimers = [];
+    let walkState = { active: false, mode: 'idle', z: 7.0, targetZ: 1.8, rotY: Math.PI, speed: 2.2 };
+
+    function clearTimers() {
+      scenarioTimers.forEach(t => clearTimeout(t)); scenarioTimers = [];
+      alarmActive = false; alarmLight.intensity = 0; pirDomeMat.emissiveIntensity = 0;
+      document.querySelectorAll('.scen-btn').forEach(b => b.classList.remove('running'));
+    }
+    function setStage(idx, cls, text) {
+      document.getElementById('st-' + idx).className = 'stage-row ' + (cls || '');
+      document.getElementById('val-' + idx).innerText = text;
+    }
+    function setActorBadge(text, bg, border) {
+      if (actor.badge) actor.root.remove(actor.badge);
+      if (!text) { actor.badge = null; return; }
+      actor.badge = makeBillboardBadge(text, bg, border);
+      actor.root.add(actor.badge);
+    }
+
+    function unlockDoor10s() {
+      sfxUnlock();
+      targetLeverAngle = 0.55;
+      setTimeout(() => targetDoorAngle = -Math.PI * 0.44, 180);
+      setTimeout(() => targetLeverAngle = 0, 700);
+      lockRingMat.color.setHex(0x10b981); lockRingMat.emissive.setHex(0x10b981);
+      iotGreenMat.emissiveIntensity = 1.8; iotRedMat.emissiveIntensity = 0;
+      const p = document.getElementById('phone-lock-pill');
+      p.className = 'lock-pill unlocked'; p.innerText = 'UNLOCKED 10s';
+      scenarioTimers.push(setTimeout(() => {
+        targetDoorAngle = 0;
+        lockRingMat.color.setHex(0xef4444); lockRingMat.emissive.setHex(0xef4444);
+        iotGreenMat.emissiveIntensity = 0; iotRedMat.emissiveIntensity = 0.35;
+        p.className = 'lock-pill'; p.innerText = 'LOCKED';
+        update3DOled('ESP32 DOOR NODE', 'AUTO-LOCKED (0 deg)', 'MQTT: STANDBY');
+      }, 10000));
+    }
+
+    function pushNotif(tag, cls, body, meta) {
+      pipRenderer.render(scene, piDoorCam);
+      pipCtx.drawImage(pipRenderer.domElement, 0, 0, 260, 112);
+      const feed = document.getElementById('notif-feed');
+      const card = document.createElement('div'); card.className = 'notif-card';
+      const ts = new Date().toLocaleTimeString([], { hour12: false });
+      card.innerHTML = `<div class="notif-head"><span class="${cls}">${tag}</span><span class="mono">${ts}</span></div><div class="notif-body">${body}</div><div class="notif-meta mono">${meta}</div>`;
+      feed.insertBefore(card, feed.firstChild);
+    }
+
+    function maybePostBackend(personLabel, caption) {
+      if (!document.getElementById('chk-backend').checked) return;
+      pipRenderer.render(scene, piDoorCam);
+      pipRenderer.domElement.toBlob(blob => {
+        const fd = new FormData();
+        fd.append('data', JSON.stringify({ id: 'sim-' + Date.now(), timestamp: new Date().toISOString(), personLabel, caption, deviceId: 'pi-front-door-01' }));
+        if (blob) fd.append('image', blob, 'snapshot.jpg');
+        fetch('http://localhost:8085/api/events', { method: 'POST', headers: { 'X-Device-Api-Key': 'sk_device_secret_door_key_12345' }, body: fd }).catch(() => {});
+      }, 'image/jpeg', 0.88);
+    }
+
+    function ringDoorbellManual() {
+      sfxDoorbell();
+      bellHaloMat.emissiveIntensity = 2.6;
+      setTimeout(() => bellHaloMat.emissiveIntensity = 0.9, 900);
+      update3DOled('MQTT: door/bell', 'DOORBELL PRESSED', 'Capturing frame...', '#f59e0b');
+      pushNotif('Doorbell', 'tag-info', 'Doorbell switch activated at front entrance.', 'MQTT door/bell • Snapshot OK');
+    }
+
+    function startScenario(type) {
+      clearTimers();
+      for (let i = 1; i <= 5; i++) setStage(i, '', 'Waiting...');
+      targetDoorAngle = 0;
+      document.getElementById('btn-' + type)?.classList.add('running');
+      const lbl = document.getElementById('actor-state-label');
+
+      // Focus camera smoothly toward front porch when running a scenario
+      if (orbit.desiredRadius > 10) setCameraPreset('porch');
+
+      if (type === 'known') {
+        lbl.innerText = 'ALICE APPROACHING';
+        droppedParcel.visible = false; actor.root.visible = true;
+        actor.coatMat.color.setHex(0x10b981); actor.hair.visible = true; actor.courierCap.visible = false;
+        actor.heldBox.visible = false; actor.reticle.visible = false;
+        setActorBadge('Alice • Authorized', 'rgba(6, 78, 59, 0.92)', '#10b981');
+        walkState = { active: true, mode: 'approaching', z: 6.4, targetZ: 1.75, rotY: Math.PI, speed: 2.3 };
+        actor.root.position.set(0, -0.22, 6.4);
+
+        scenarioTimers.push(setTimeout(() => { pirDomeMat.emissiveIntensity = 1.8; setStage(1, 'active', 'MQTT door/motion -> Wake PiCam'); update3DOled('PIR MOTION', 'Waking Pi Camera', 'Scanning face...'); }, 600));
+        scenarioTimers.push(setTimeout(() => { actor.reticle.visible = true; actor.reticleMat.color.setHex(0x3b82f6); setStage(1, 'done-ok', 'Frame captured (640x480)'); setStage(2, 'active', 'YuNet: 1 face • Liveness 4/4 OK'); }, 1650));
+        scenarioTimers.push(setTimeout(() => { actor.reticleMat.color.setHex(0x10b981); setActorBadge('Alice • Match 0.84', 'rgba(6, 95, 70, 0.95)', '#10b981'); walkState.mode = 'waving'; setStage(2, 'done-ok', 'Anti-spoof passed'); setStage(3, 'done-ok', 'Local SFace: Alice (0.84 > 0.363)'); setStage(4, 'active', 'Calling Gemini Flash...'); }, 2350));
+        scenarioTimers.push(setTimeout(() => {
+          const cap = 'Alice arrived at front door; deadbolt unlocked.';
+          setStage(4, 'done-ok', cap); setStage(5, 'done-ok', 'MQTT door/cmd/lock -> Open 10s');
+          update3DOled('WELCOME ALICE', 'UNLOCKED (10s)', cap, '#10b981');
+          unlockDoor10s(); pushNotif('Authorized Entry', 'tag-ok', cap, 'Local SFace • Cosine 0.84');
+          maybePostBackend('Alice', cap); lbl.innerText = 'UNLOCKED (ALICE)';
+        }, 3050));
+      } else if (type === 'stranger') {
+        lbl.innerText = 'STRANGER DETECTED';
+        actor.root.visible = true; actor.coatMat.color.setHex(0xbe123c); actor.hair.visible = true;
+        actor.courierCap.visible = false; actor.heldBox.visible = false; actor.reticle.visible = false;
+        setActorBadge('Unidentified Subject', 'rgba(127, 29, 29, 0.92)', '#ef4444');
+        walkState = { active: true, mode: 'approaching', z: 6.4, targetZ: 1.95, rotY: Math.PI, speed: 1.9 };
+        actor.root.position.set(0, -0.22, 6.4);
+
+        scenarioTimers.push(setTimeout(() => { pirDomeMat.emissiveIntensity = 1.8; setStage(1, 'active', 'MQTT door/motion -> Wake PiCam'); }, 650));
+        scenarioTimers.push(setTimeout(() => { actor.reticle.visible = true; actor.reticleMat.color.setHex(0xf59e0b); walkState.mode = 'suspicious'; setStage(1, 'done-ok', 'Stationary subject on porch'); setStage(2, 'done-ok', 'YuNet: 1 face detected'); setStage(3, 'done-alert', 'SFace: UNKNOWN (0.14 < 0.363)'); setStage(4, 'active', 'Calling Gemini Flash...'); }, 2050));
+        scenarioTimers.push(setTimeout(() => {
+          actor.reticleMat.color.setHex(0xef4444); setActorBadge('Unknown Visitor • Alert', 'rgba(153, 27, 27, 0.96)', '#ef4444');
+          alarmActive = true; sfxAlarm();
+          const cap = 'Unknown visitor lingering on porch near entrance.';
+          setStage(4, 'done-alert', cap); setStage(5, 'done-alert', 'LOCK HELD • Red LED + Buzzer');
+          update3DOled('SECURITY ALERT', 'UNKNOWN VISITOR', 'DOOR LOCKED', '#ef4444');
+          pushNotif('Unknown Visitor', 'tag-alert', cap, 'SFace: unknown • ESP32 Alarm');
+          maybePostBackend('unknown', cap); lbl.innerText = 'ALARM ACTIVE';
+        }, 2950));
+      } else if (type === 'courier') {
+        lbl.innerText = 'DELIVERY IN PROGRESS';
+        droppedParcel.visible = false; actor.root.visible = true;
+        actor.coatMat.color.setHex(0x1d4ed8); actor.hair.visible = false; actor.courierCap.visible = true;
+        actor.heldBox.visible = true; actor.reticle.visible = false;
+        setActorBadge('Express Courier', 'rgba(30, 58, 138, 0.92)', '#60a5fa');
+        walkState = { active: true, mode: 'approaching_courier', z: 6.6, targetZ: 1.75, rotY: Math.PI, speed: 2.35 };
+        actor.root.position.set(0, -0.22, 6.6);
+
+        scenarioTimers.push(setTimeout(() => { pirDomeMat.emissiveIntensity = 1.8; setStage(1, 'done-ok', 'MQTT door/motion -> Courier'); setStage(2, 'active', 'Tracking parcel object...'); }, 650));
+        scenarioTimers.push(setTimeout(() => { walkState.mode = 'placing'; sfxDoorbell(); setStage(2, 'done-ok', 'Parcel placed on doormat'); setStage(3, 'done-ok', 'SFace: External visitor'); setStage(4, 'active', 'Generating Gemini caption...'); }, 2300));
+        scenarioTimers.push(setTimeout(() => {
+          actor.heldBox.visible = false; droppedParcel.visible = true;
+          walkState.mode = 'leaving'; walkState.rotY = 0; walkState.targetZ = 7.4;
+          const hm = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+          const cap = `Package delivered on doorstep at ${hm}.`;
+          setStage(4, 'done-ok', cap); setStage(5, 'done-ok', 'OLED updated • Push sent');
+          update3DOled('PACKAGE DELIVERED', `Time: ${hm}`, '1 Parcel on mat', '#f59e0b');
+          pushNotif('Package Delivery', 'tag-info', cap, 'Gemini 2.5 Flash • Snapshot OK');
+          maybePostBackend('courier', cap); lbl.innerText = 'PARCEL DELIVERED';
+        }, 3100));
+      } else {
+        lbl.innerText = 'EMPTY (IGNORE)';
+        actor.root.visible = false; droppedParcel.visible = false; walkState.active = false;
+        setStage(1, 'done-ok', 'Minor wind / foliage movement'); setStage(2, 'done-ok', 'YuNet: 0 faces');
+        setStage(3, '', 'Skipped');
+        scenarioTimers.push(setTimeout(() => {
+          setStage(4, 'done-ok', 'Gemini: IGNORE (suppressed)');
+          setStage(5, '', 'No alert dispatched');
+          update3DOled('ESP32 DOOR NODE', 'PORCH CLEAR', 'FILTER: IGNORE');
+        }, 650));
+      }
+    }
+
+    setInterval(() => { document.getElementById('phone-clock').innerText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false }); }, 5000);
+
+    // =========================================================================
+    // 10. ANIMATION LOOP
+    // =========================================================================
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.05);
+      const t = clock.getElapsedTime();
+
+      if (orbit.mode === 'picam') {
+        camera.position.lerp(new THREE.Vector3(0, 3.42, 0.58), 0.12);
+        camera.lookAt(0, 1.10, 2.55);
+      } else {
+        orbit.theta += (orbit.desiredTheta - orbit.theta) * 0.1;
+        orbit.phi += (orbit.desiredPhi - orbit.phi) * 0.1;
+        orbit.radius += (orbit.desiredRadius - orbit.radius) * 0.1;
+        orbit.target.lerp(orbit.desiredTarget, 0.1);
+        camera.position.set(
+          orbit.target.x + orbit.radius * Math.sin(orbit.phi) * Math.sin(orbit.theta),
+          orbit.target.y + orbit.radius * Math.cos(orbit.phi),
+          orbit.target.z + orbit.radius * Math.sin(orbit.phi) * Math.cos(orbit.theta)
+        );
+        camera.lookAt(orbit.target);
+      }
+
+      doorPivot.rotation.y += (targetDoorAngle - doorPivot.rotation.y) * 0.09;
+      handlePivot.rotation.z += (targetLeverAngle - handlePivot.rotation.z) * 0.18;
+
+      const scanCycle = (t * 0.6) % 1;
+      const dist = 0.6 + scanCycle * 3.6;
+      scanPlane.position.set(0, 0, -dist);
+      scanPlane.scale.set(dist / 2.4, dist / 2.4, 1);
+      scanPlane.material.opacity = 0.24 * (1 - scanCycle * 0.75);
+
+      if (alarmActive) {
+        const pulse = (Math.sin(t * 14) + 1) * 0.5;
+        alarmLight.intensity = pulse * 2.8;
+        iotRedMat.emissiveIntensity = 0.35 + pulse * 2.4;
+      }
+
+      if (actor.root.visible && walkState.active) {
+        actor.root.rotation.y += (walkState.rotY - actor.root.rotation.y) * 0.15;
+        const moving = ((walkState.mode === 'approaching' || walkState.mode === 'approaching_courier') && walkState.z > walkState.targetZ) ||
+                       (walkState.mode === 'leaving' && walkState.z < walkState.targetZ);
+        if (moving) {
+          walkState.z += (walkState.mode === 'leaving' ? 1 : -1) * walkState.speed * dt;
+          const ty = walkState.z < 2.55 ? 0.0 : (walkState.z < 2.95 ? -0.11 : -0.22);
+          actor.root.position.set(0, ty + Math.abs(Math.sin(t * 9)) * 0.025, walkState.z);
+          const sw = Math.sin(t * 9) * 0.52;
+          actor.leftLeg.rotation.x = sw; actor.rightLeg.rotation.x = -sw;
+          if (actor.heldBox.visible) { actor.leftArm.rotation.set(-0.95, 0.22, 0); actor.rightArm.rotation.set(-0.95, -0.22, 0); }
+          else { actor.leftArm.rotation.set(-sw * 0.75, 0, 0); actor.rightArm.rotation.set(sw * 0.75, 0, 0); }
+        } else {
+          if (walkState.mode === 'leaving' && walkState.z >= walkState.targetZ) { actor.root.visible = false; walkState.active = false; }
+          actor.leftLeg.rotation.x *= 0.85; actor.rightLeg.rotation.x *= 0.85;
+          if (walkState.mode === 'waving') {
+            actor.rightArm.rotation.x = -2.45; actor.rightArm.rotation.z = -0.35 + Math.sin(t * 8) * 0.28;
+          } else if (walkState.mode === 'suspicious') {
+            actor.headPivot.rotation.y = Math.sin(t * 2.6) * 0.55;
+          } else if (walkState.mode === 'placing') {
+            actor.leftArm.rotation.set(-1.25, 0.2, 0); actor.rightArm.rotation.set(-1.25, -0.2, 0);
+          }
+        }
+      }
+      renderer.render(scene, camera);
+    }
+
+    setTimeout(() => { pipRenderer.render(scene, piDoorCam); pipCtx.drawImage(pipRenderer.domElement, 0, 0, 260, 142); }, 180);
+
+    // =========================================================================
+    // 11. LIVE PC WEBCAM FACE FEED & REAL-TIME SYNC WITH PORT 8085 & ANDROID APK
+    // =========================================================================
+    const PC_API = (location.protocol.startsWith('http') && location.port !== '8090') ? location.origin : 'http://localhost:8085';
+    let usePcWebcam = true;
+    let lastSyncedUnlock = false;
+
+    function togglePhoneCamMode() {
+      usePcWebcam = !usePcWebcam;
+      const img = document.getElementById('live-pc-cam-img');
+      const cvs = document.getElementById('pip-canvas');
+      const tag = document.getElementById('pip-source-tag');
+      if (usePcWebcam) {
+        img.style.display = 'block'; cvs.style.display = 'none';
+        tag.innerText = 'PC CAM LIVE';
+      } else {
+        img.style.display = 'none'; cvs.style.display = 'block';
+        tag.innerText = '3D PI CAM';
+        pipRenderer.render(scene, piDoorCam);
+        pipCtx.drawImage(pipRenderer.domElement, 0, 0, 260, 142);
+      }
+    }
+
+    async function remoteDoorCmd(action) {
+      if (action === 'unlock') {
+        unlockDoor10s();
+        update3DOled('REMOTE CONTROL', 'DOOR UNLOCKED', '10s Auto-Relock', '#10b981');
+        pushNotif('Remote Unlock', 'tag-ok', 'Door unlocked from phone control deck (10s).', 'Servo GPIO 13 • 90 deg');
+      } else if (action === 'lock') {
+        targetDoorAngle = 0; alarmActive = false; alarmLight.intensity = 0;
+        lockRingMat.color.setHex(0xef4444); lockRingMat.emissive.setHex(0xef4444);
+        iotGreenMat.emissiveIntensity = 0; iotRedMat.emissiveIntensity = 0.35;
+        const p = document.getElementById('phone-lock-pill');
+        p.className = 'lock-pill'; p.innerText = 'LOCKED';
+        update3DOled('REMOTE CONTROL', 'DOOR KEPT LOCKED', 'Deadbolt Secured', '#f59e0b');
+        pushNotif('Door Secured', 'tag-info', 'Front door kept locked from control deck.', 'Servo GPIO 13 • 0 deg');
+      } else if (action === 'alarm') {
+        alarmActive = true; sfxAlarm();
+        update3DOled('SECURITY ALARM', 'TRIGGERED REMOTE', 'RED LED + BUZZER', '#ef4444');
+        pushNotif('Alarm Triggered', 'tag-alert', 'Security alarm activated remotely.', 'ESP32 Buzzer + LED');
+      }
+      try { await fetch(`${PC_API}/api/door/${action}`, { method: 'POST' }); } catch {}
+    }
+
+    // Continuous 25-30 FPS MJPEG live stream inside the 3D Smartphone Mockup
+    function startPcMjpegStream() {
+      const img = document.getElementById('live-pc-cam-img');
+      if (!img) return;
+      img.onerror = () => setTimeout(() => { if (usePcWebcam) startPcMjpegStream(); }, 2000);
+      img.src = `${PC_API}/api/camera/stream?t=${Date.now()}`;
+    }
+    startPcMjpegStream();
+
+    // Poll real door lock state (syncs 3D house with real Android APK & PC webcam!)
+    setInterval(async () => {
+      try {
+        const r = await fetch(`${PC_API}/api/door/status`, { cache: 'no-store' });
+        if (!r.ok) return;
+        const d = await r.json();
+        const p = document.getElementById('phone-lock-pill');
+        if (d.unlocked && !lastSyncedUnlock) {
+          targetDoorAngle = -Math.PI * 0.44;
+          lockRingMat.color.setHex(0x10b981); lockRingMat.emissive.setHex(0x10b981);
+          iotGreenMat.emissiveIntensity = 1.8; iotRedMat.emissiveIntensity = 0;
+          p.className = 'lock-pill unlocked'; p.innerText = `UNLOCKED (${d.unlockRemainingSeconds}s)`;
+          update3DOled('LIVE PC CAMERA', `OPEN: ${d.currentPerson.toUpperCase()}`, `Remaining: ${d.unlockRemainingSeconds}s`, '#10b981');
+        } else if (!d.unlocked && lastSyncedUnlock) {
+          targetDoorAngle = 0;
+          lockRingMat.color.setHex(0xef4444); lockRingMat.emissive.setHex(0xef4444);
+          iotGreenMat.emissiveIntensity = 0; iotRedMat.emissiveIntensity = 0.35;
+          p.className = 'lock-pill'; p.innerText = 'LOCKED';
+          update3DOled('ESP32 DOOR NODE', 'STATUS: LOCKED', 'PC CAM ACTIVE');
+        }
+        if (d.currentPerson && d.currentPerson !== 'none') {
+          document.getElementById('actor-state-label').innerText = `PC CAM: ${d.currentPerson.toUpperCase()}`;
+        }
+        lastSyncedUnlock = d.unlocked;
+      } catch {}
+    }, 650);
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
